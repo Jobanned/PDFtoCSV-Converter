@@ -45,8 +45,13 @@ app.post("/api/extract", upload.single("pdf"), async (req, res) => {
             },
             {
               text: "Extract all curriculum objectives and competencies from this PDF into a structured format. " +
-                    "Return an array of JSON objects matching the schema exactly. If a specific code or number " +
-                    "is missing in the source text, use empty string for strings, or 0 for numbers, or infer it from the context if obvious. " +
+                    "Return an array of JSON objects matching the schema exactly. If a specific objective parameter " +
+                    "is missing, infer it from the context if obvious, or use empty strings/0.\n" +
+                    "CRITICAL MELC CODE FORMATTING RULE: Construct the 'melcCode' column explicitly using this format: [SubjectPrefix][GradeLevelNumber]-[WeekNumber].\n" +
+                    "1. SubjectPrefix map: English=EN, Mathematics=M, Araling Panlipunan=AP, Edukasyon sa Pagpapakatao=ESP, Filipino=FIL, MAPEH=MA, Science=S, TLE=TLE.\n" +
+                    "2. GradeLevelNumber: Just the numerical grade (e.g. Grade 10 -> 10, Grade 2 -> 2).\n" +
+                    "3. WeekNumber: Use the 'objectiveDayNumber' as the reference for the week, zero-padded to 2 digits (e.g. Day 1 -> 01, Day 10 -> 10).\n" +
+                    "Examples: English for grade 10 for week 1 -> EN10-01, Mathematics for grade 2 for week 10 -> M2-10.\n" +
                     "Make sure to extract all rows in the document sequentially."
             }
           ]
@@ -88,7 +93,36 @@ app.post("/api/extract", upload.single("pdf"), async (req, res) => {
     }
 
     try {
-      const data = JSON.parse(response.text);
+      let data = JSON.parse(response.text);
+      if (Array.isArray(data)) {
+        const melcMap = new Map();
+        
+        data.forEach((row, index) => {
+          row.severity = "Normal";
+          if (row.melcCode) {
+            if (melcMap.has(row.melcCode)) {
+              // Conflicting Melc Duplicate check
+              const firstRow = melcMap.get(row.melcCode);
+              
+              if (
+                row.gradeLevelName !== firstRow.gradeLevelName ||
+                row.subjectName !== firstRow.subjectName ||
+                row.melcDescription !== firstRow.melcDescription
+              ) {
+                // If there's a conflict, force the duplicate to use the same values as the first occurrence
+                row.gradeLevelName = firstRow.gradeLevelName;
+                row.subjectName = firstRow.subjectName;
+                row.melcDescription = firstRow.melcDescription;
+                
+                row.severity = "Conflict Resolved";
+                firstRow.severity = "Conflict Resolved";
+              }
+            } else {
+              melcMap.set(row.melcCode, row);
+            }
+          }
+        });
+      }
       res.json({ data });
     } catch (parseError) {
       console.error("JSON Error:", parseError, response.text);

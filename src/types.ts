@@ -8,4 +8,5 @@ export interface MelcRecord {
   objectiveDayNumber: number;
   objectiveText: string;
   objectiveSortOrder: number;
+  severity: string;
 }

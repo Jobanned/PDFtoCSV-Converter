@@ -242,11 +242,12 @@ export default function App() {
                       <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase w-16 text-center">Day</th>
                       <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase w-48">Objective</th>
                       <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase w-16 text-center">Sort</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase w-24 text-center">Severity</th>
                     </tr>
                   </thead>
                   <tbody className="text-xs divide-y divide-slate-100">
                     {records.map((r, i) => (
-                      <tr key={i} className="hover:bg-slate-50 transition-colors">
+                      <tr key={i} className={`hover:bg-slate-50 transition-colors ${r.severity !== 'Normal' ? 'bg-orange-50/30' : ''}`}>
                         <td className="px-4 py-3 text-slate-400 text-center border-r border-slate-100">{(i + 1).toString().padStart(2, '0')}</td>
                         <td className="px-4 py-3 font-medium text-slate-700">{r.gradeLevelCode}</td>
                         <td className="px-4 py-3 text-slate-600 truncate">{r.subjectCode}</td>
@@ -255,6 +256,13 @@ export default function App() {
                         <td className="px-4 py-3 text-slate-700 text-center">{r.objectiveDayNumber}</td>
                         <td className="px-4 py-3 text-slate-600 truncate" title={r.objectiveText}>{r.objectiveText}</td>
                         <td className="px-4 py-3 text-slate-700 text-center">{r.objectiveSortOrder}</td>
+                        <td className="px-4 py-3 text-slate-700 text-center">
+                          {r.severity !== "Normal" ? (
+                             <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold">Conflict</span>
+                          ) : (
+                             <span className="text-slate-400 text-[10px]">Normal</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
