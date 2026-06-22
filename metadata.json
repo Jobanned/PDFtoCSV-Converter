@@ -1,0 +1,6 @@
+{
+  "name": "Curriculum PDF to CSV Extractor",
+  "description": "Convert curriculum or framework PDFs into structured CSV data automatically.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
