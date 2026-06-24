@@ -11,7 +11,23 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 } // 20 MB max file size
 });
 
-app.post("/api/extract", upload.single("pdf"), async (req, res) => {
+app.all("/api/extract", (req, res, next) => {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: `Method Not Allowed: ${req.method}. Please ensure you are not being redirected.` });
+  }
+  next();
+});
+
+app.post("/api/extract", (req, res, next) => {
+  upload.single("pdf")(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: err.message });
+    } else if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: "No PDF file uploaded" });

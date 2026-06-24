@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
-import { UploadCloud, File, Loader2, Download, Table2 } from "lucide-react";
-import Papa from "papaparse";
+import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { CloudUpload, FileText, Loader2, Download, Table } from "lucide-react";
+import * as Papa from "papaparse";
 import { MelcRecord } from "./types";
 
 export default function App() {
@@ -10,18 +10,18 @@ export default function App() {
   const [records, setRecords] = useState<MelcRecord[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFileSelection(e.dataTransfer.files[0]);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFileSelection(e.target.files[0]);
     }
@@ -51,7 +51,22 @@ export default function App() {
       const response = await fetch("/api/extract", {
         method: "POST",
         body: formData,
+        credentials: "include",
+        headers: {
+          "Accept": "application/json"
+        }
       });
+
+      if (response.redirected && response.url.includes("__cookie_check")) {
+        throw new Error("Authentication error: Your browser's privacy settings are blocking cookies in the preview iframe. Please click the 'Open in new tab' icon ↗ (top right) to use this feature.");
+      } else if (response.redirected) {
+        throw new Error(`Request was unexpectedly redirected to ${response.url}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("text/html")) {
+        throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+      }
 
       if (!response.ok) {
         let msg = "Extraction failed";
@@ -64,7 +79,18 @@ export default function App() {
         throw new Error(msg);
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error(`Server returned invalid JSON: ${text.substring(0, 100)}...`);
+        }
+      } catch (err: any) {
+        throw new Error(err.message || "Failed to read server response");
+      }
+
       if (data.data) {
         setRecords(data.data);
       } else {
@@ -100,7 +126,7 @@ export default function App() {
       <nav className="h-16 flex items-center justify-between px-8 bg-white border-b border-slate-200 shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-            <Table2 className="w-5 h-5 text-white" />
+            <Table className="w-5 h-5 text-white" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-slate-900 leading-tight">CurriculumExtractor Pro</h1>
@@ -136,7 +162,7 @@ export default function App() {
               
               {file ? (
                 <>
-                  <File className="w-10 h-10 text-blue-500 mb-3" />
+                  <FileText className="w-10 h-10 text-blue-500 mb-3" />
                   <p className="text-sm font-semibold text-blue-700 truncate w-full">{file.name}</p>
                   <p className="text-[11px] text-slate-400 mt-1">
                     {(file.size / 1024 / 1024).toFixed(2)} MB • Uploaded
@@ -144,7 +170,7 @@ export default function App() {
                 </>
               ) : (
                 <>
-                  <UploadCloud className="w-10 h-10 text-blue-400 mb-3" />
+                  <CloudUpload className="w-10 h-10 text-blue-400 mb-3" />
                   <p className="font-medium text-slate-700 text-sm">Click or drag PDF</p>
                   <p className="text-[11px] text-slate-400 mt-1">up to 20MB</p>
                 </>
@@ -270,7 +296,7 @@ export default function App() {
               </div>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-12 text-slate-400 bg-slate-50/30">
-                <Table2 className="w-16 h-16 mb-4 opacity-20" />
+                <Table className="w-16 h-16 mb-4 opacity-20" />
                 <p className="text-sm font-medium">Upload and extract a PDF to view data here.</p>
               </div>
             )}
