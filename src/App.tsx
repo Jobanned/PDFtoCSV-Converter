@@ -37,6 +37,18 @@ export default function App() {
     setRecords([]); // Reset
   };
 
+  const updateEditableField = (
+    rowIndex: number,
+    field: "subjectCode" | "melcCode",
+    value: string,
+  ) => {
+    setRecords((prev) =>
+      prev.map((record, index) =>
+        index === rowIndex ? { ...record, [field]: value } : record,
+      ),
+    );
+  };
+
   const extractData = async () => {
     if (!file) return;
 
@@ -276,8 +288,24 @@ export default function App() {
                       <tr key={i} className={`hover:bg-slate-50 transition-colors ${r.severity !== 'Normal' ? 'bg-orange-50/30' : ''}`}>
                         <td className="px-4 py-3 text-slate-400 text-center border-r border-slate-100">{(i + 1).toString().padStart(2, '0')}</td>
                         <td className="px-4 py-3 font-medium text-slate-700">{r.gradeLevelCode}</td>
-                        <td className="px-4 py-3 text-slate-600 truncate">{r.subjectCode}</td>
-                        <td className="px-4 py-3 font-mono text-[10px] text-slate-700">{r.melcCode}</td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            value={r.subjectCode}
+                            onChange={(e) => updateEditableField(i, "subjectCode", e.target.value)}
+                            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            aria-label={`Subject row ${i + 1}`}
+                          />
+                        </td>
+                        <td className="px-4 py-2">
+                          <input
+                            type="text"
+                            value={r.melcCode}
+                            onChange={(e) => updateEditableField(i, "melcCode", e.target.value)}
+                            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1 font-mono text-[10px] text-slate-700 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            aria-label={`MELC Code row ${i + 1}`}
+                          />
+                        </td>
                         <td className="px-4 py-3 text-slate-600 truncate" title={r.melcDescription}>{r.melcDescription}</td>
                         <td className="px-4 py-3 text-slate-700 text-center">{r.objectiveDayNumber}</td>
                         <td className="px-4 py-3 text-slate-600 truncate" title={r.objectiveText}>{r.objectiveText}</td>
@@ -313,7 +341,7 @@ export default function App() {
                 <>
                   <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">Structure Valid</span>
                   <span className="text-slate-300">|</span>
-                  <span>Extracted newly</span>
+                  <span>Subject and MELC Code are editable</span>
                 </>
               ) : (
                 <span className="px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full font-bold">Awaiting Data</span>
